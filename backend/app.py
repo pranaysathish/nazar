@@ -1,11 +1,14 @@
 """
-app.py  —  Flask API server (Video upload + YouTube analysis)
+app.py  —  Flask API server (video upload + YouTube analysis)
 Run:  python app.py
 """
 import os
+import re
 import tempfile
-from flask import Flask, request, jsonify
+
+from flask import Flask, jsonify, request
 from flask_cors import CORS
+
 from predictor import predict_video
 
 app = Flask(__name__)
@@ -30,7 +33,7 @@ def predict():
         return jsonify({"error": "No video file provided."}), 400
     file = request.files["video"]
     if not allowed_file(file.filename):
-        return jsonify({"error": f"Unsupported file type. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"}), 400
+        return jsonify({"error": f"Unsupported file type. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}"}), 400
 
     suffix = "." + file.filename.rsplit(".", 1)[1].lower()
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -39,65 +42,87 @@ def predict():
 
     try:
         return jsonify(predict_video(tmp_path, top_n=5))
+    except ValueError as e:  # unreadable or empty video
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
-        try: os.unlink(tmp_path)
-        except Exception: pass
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
 
 # ── YouTube URL ───────────────────────────────────────────────────────────────
+def youtube_error(message: str):
+    """Turn a yt-dlp error into a short message the user can act on."""
+    message = re.sub(r"\x1b\[[0-9;]*m", "", message)  # drop terminal colour codes
+    low = message.lower()
+    if "not a bot" in low:
+        return jsonify({"error": "YouTube asked for a sign-in check on this network. "
+                                 "Use Upload File with a saved copy of the ad instead."}), 400
+    if "private video" in low or ("age" in low and "restrict" in low) or "sign in" in low:
+        return jsonify({"error": "This video is private or age-restricted, so it cannot be downloaded."}), 400
+    if "latest version" in low:  # yt-dlp's own "this may be a bug" text: usually YouTube changed
+        return jsonify({"error": "The YouTube downloader could not read this page; it may need an update "
+                                 "(pip install -U \"yt-dlp[default]\"). Use Upload File for now."}), 500
+    if "requested format is not available" in low:
+        return jsonify({"error": "YouTube did not offer a downloadable video stream for this link. "
+                                 "Try another link, or use Upload File with a saved copy."}), 400
+    if any(s in low for s in ("getaddrinfo", "failed to resolve", "unable to download webpage",
+                              "timed out", "connection", "network is unreachable")):
+        return jsonify({"error": "Could not reach YouTube. Check the internet connection, "
+                                 "or use Upload File with a saved copy of the ad."}), 503
+    if "unavailable" in low or "not available" in low or "unsupported url" in low:
+        return jsonify({"error": "Video not available. Check the URL and try again."}), 400
+    return jsonify({"error": f"YouTube download failed: {message}"}), 500
+
+
 @app.route("/predict-youtube", methods=["POST"])
 def predict_youtube():
     data = request.get_json(silent=True) or {}
-    url = data.get("url", "").strip()
+    url = (data.get("url") or "").strip()
     if not url:
         return jsonify({"error": "No YouTube URL provided."}), 400
 
-    tmp_path = None
-    try:
-        import yt_dlp
-        with tempfile.TemporaryDirectory() as tmpdir:
-            ydl_opts = {
-                # 22=720p MP4 pre-merged, 18=360p MP4 pre-merged.
-                # Both are progressive (audio+video in one file) - zero ffmpeg needed.
-                # NO fallback to adaptive/DASH formats that require merging.
-                "format": "22/18",
-                "outtmpl": os.path.join(tmpdir, "video.%(ext)s"),
-                "quiet": True,
-                "no_warnings": True,
-                "noplaylist": True,
-            }
+    import yt_dlp
+
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
+        ydl_opts = {
+            # YouTube no longer offers the old ready-made MP4s (formats 22/18) for most videos.
+            # The model only needs the pictures, so download a video-only H.264 stream (<= 480p):
+            # one file, no audio, so no merging and no ffmpeg. OpenCV reads it directly.
+            "format": "bv*[vcodec^=avc1][height<=480]/b[ext=mp4][height<=720]/bv*[height<=480]/b",
+            "outtmpl": os.path.join(tmpdir, "video.%(ext)s"),
+            "quiet": True,
+            "no_warnings": True,
+            "noprogress": True,
+            "noplaylist": True,
+            # YouTube pages need a JavaScript runtime: use Deno or Node, whichever is installed.
+            "js_runtimes": {"deno": {}, "node": {}},
+        }
+        try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=True)
-                ext = info.get("ext", "mp4")
-                downloaded = os.path.join(tmpdir, f"video.{ext}")
+                ydl.download([url])
+        except Exception as e:
+            return youtube_error(str(e))
 
-            # Copy to persistent temp so we can pass it after tmpdir closes
-            import shutil
-            _, tmp_path = tempfile.mkstemp(suffix=f".{ext}")
-            shutil.copy2(downloaded, tmp_path)
-
-        return jsonify(predict_video(tmp_path, top_n=5))
-
-    except Exception as e:
-        msg = str(e)
-        if "Private video" in msg or "Sign in" in msg:
-            return jsonify({"error": "This video is private or age-restricted."}), 400
-        if "not available" in msg.lower():
-            return jsonify({"error": "Video not available. Check the URL and try again."}), 400
-        return jsonify({"error": msg}), 500
-    finally:
-        if tmp_path and os.path.exists(tmp_path):
-            try: os.unlink(tmp_path)
-            except Exception: pass
+        files = [f for f in os.listdir(tmpdir) if f.startswith("video.") and not f.endswith(".part")]
+        if not files:
+            return jsonify({"error": "The YouTube download did not produce a video file."}), 500
+        try:
+            return jsonify(predict_video(os.path.join(tmpdir, files[0]), top_n=5))
+        except ValueError as e:  # unreadable or empty video
+            return jsonify({"error": str(e)}), 400
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
     print("=" * 55)
-    print("  AdEthics AI — Backend Server")
+    print("  AdEthics AI - Backend Server")
     print("  http://127.0.0.1:5000")
     print("=" * 55)
-    from predictor import load_mobilenet
-    load_mobilenet()
+    from predictor import warm_up
+    warm_up()  # load MobileNetV2, Grad-CAM and BLIP now, so the first analysis is fast
     app.run(debug=False, host="127.0.0.1", port=5000)

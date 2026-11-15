@@ -5,18 +5,34 @@ import HeroBanner from "@/components/HeroBanner";
 import UploadSection from "@/components/UploadSection";
 import ProcessingCard from "@/components/ProcessingCard";
 import ResultsDashboard from "@/components/ResultsDashboard";
+import { ORIGINAL } from "@/lib/metrics";
+
+export type TopFrame = {
+  frame_index: number;     // position among the sampled frames (0-based)
+  time_sec: number;        // time in the video
+  image_b64: string;       // JPEG
+  heatmap_b64: string;     // JPEG, Grad-CAM overlay
+  caption: string;         // BLIP caption
+  score: number;           // 0-100
+  keywords: string[];      // objectification keywords found in the caption
+  keyword_score: number;   // M(C) = matched / 17
+  flagged: boolean;        // at least one keyword found
+  sharp: boolean;          // passed the blur check
+  selected: boolean;       // score > 50% and sharp
+};
 
 export type AnalysisResult = {
-  score: number;
+  score: number;                  // S_avg, 0-100
   verdict: "OBJECTIFYING" | "SAFE";
+  confidence: number;             // S_avg x sharp frames / 30, 0-100
   frames_analyzed: number;
+  frames_sharp: number;
+  frames_above_threshold: number;
+  frames_selected: number;
+  frame_scores: number[];         // every sampled frame, in time order
+  frame_sharp: boolean[];
   processing_time: number;
-  top_frames: {
-    image_b64: string;
-    caption: string;
-    score: number;
-    flagged: boolean;
-  }[];
+  top_frames: TopFrame[];
   explanation: string;
 };
 
@@ -101,7 +117,7 @@ export default function Home() {
       </div>
 
       <footer className="border-t border-white/5 mt-16 py-6 text-center text-xs text-white/20">
-        AdEthics AI &nbsp;·&nbsp; MobileNetV2 + BLIP &nbsp;·&nbsp; Dataset: 110 Ads &nbsp;·&nbsp; 83.95% Accuracy
+        AdEthics AI &nbsp;·&nbsp; MobileNetV2 + Grad-CAM + BLIP &nbsp;·&nbsp; Dataset: {ORIGINAL.ads} ads, {ORIGINAL.frames.toLocaleString("en-US")} frames &nbsp;·&nbsp; Test accuracy {ORIGINAL.accuracy}% ({ORIGINAL.test} frames)
       </footer>
     </main>
   );

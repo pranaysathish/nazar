@@ -15,7 +15,9 @@ export default function UploadSection({ onFile, onYouTube }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleFile(file: File) {
-    if (!file.type.startsWith("video/")) return;
+    // Some systems report no MIME type for .mkv/.flv, so also accept by file extension.
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (!file.type.startsWith("video/") && !["mp4", "mov", "avi", "mkv", "webm", "flv"].includes(ext)) return;
     setSelectedFile(file);
   }
 
@@ -31,7 +33,7 @@ export default function UploadSection({ onFile, onYouTube }: Props) {
   }
 
   function validateYT(url: string) {
-    return /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+/.test(url);
+    return /^(https?:\/\/)?((www|m)\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[\w-]+/.test(url.trim());
   }
 
   function handleAnalyze() {
@@ -131,7 +133,7 @@ export default function UploadSection({ onFile, onYouTube }: Props) {
           />
           {ytError && <p className="text-xs text-red-400">{ytError}</p>}
           <p className="text-xs text-white/20">
-            ⚡ The video downloads automatically in the background. May take 10–20s extra.
+            ⚡ Needs an internet connection. The video downloads in the background (about 5–10 s extra).
             Private or age-restricted videos are not supported.
           </p>
         </div>
