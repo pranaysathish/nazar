@@ -1,0 +1,64 @@
+{
+ "model": "openai/clip-vit-base-patch16",
+ "same_split": {
+  "label": "CLIP+LR, re-run split, C=0.01",
+  "frames": 1086,
+  "accuracy": 90.98,
+  "roc_auc": 0.9674,
+  "obj_precision": 0.903,
+  "obj_recall": 0.899,
+  "obj_f1": 0.901,
+  "non_precision": 0.915,
+  "non_recall": 0.919,
+  "cm": {
+   "tn": 541,
+   "fp": 48,
+   "fn": 50,
+   "tp": 447
+  },
+  "ads": 110,
+  "ads_correct": 107,
+  "ad_accuracy": 97.27,
+  "train_accuracy": 93.02
+ },
+ "unseen_ads_5fold": {
+  "label": "CLIP+LR, 5-fold by ad (unseen ads)",
+  "frames": 5426,
+  "accuracy": 77.98,
+  "roc_auc": 0.8637,
+  "obj_precision": 0.745,
+  "obj_recall": 0.788,
+  "obj_f1": 0.766,
+  "non_precision": 0.812,
+  "non_recall": 0.773,
+  "cm": {
+   "tn": 2275,
+   "fp": 668,
+   "fn": 527,
+   "tp": 1956
+  },
+  "ads": 110,
+  "ads_correct": 103,
+  "ad_accuracy": 93.64
+ },
+ "zero_shot_test": {
+  "label": "CLIP zero-shot prompts, re-run test frames",
+  "frames": 1086,
+  "accuracy": 52.03,
+  "roc_auc": 0.5177,
+  "obj_precision": 0.474,
+  "obj_recall": 0.437,
+  "obj_f1": 0.454,
+  "non_precision": 0.554,
+  "non_recall": 0.591,
+  "cm": {
+   "tn": 348,
+   "fp": 241,
+   "fn": 280,
+   "tp": 217
+  },
+  "ads": 110,
+  "ads_correct": 65,
+  "ad_accuracy": 59.09
+ }
+}

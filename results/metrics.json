@@ -1,0 +1,76 @@
+{
+  "dataset": {
+    "ads": 110,
+    "ads_obj": 55,
+    "ads_non_obj": 55,
+    "frames": 5426,
+    "frames_obj": 2483,
+    "frames_non_obj": 2943,
+    "train": 3472,
+    "val": 868,
+    "test": 1086,
+    "test_obj": 497,
+    "test_non_obj": 589
+  },
+  "test_accuracy_before_fine_tuning": 0.7827,
+  "test_accuracy": 0.8085,
+  "test_loss": 0.4319,
+  "majority_class_baseline": 0.5424,
+  "roc_auc": 0.8944,
+  "average_precision": 0.88,
+  "confusion_matrix": {
+    "tn": 524,
+    "fp": 65,
+    "fn": 143,
+    "tp": 354
+  },
+  "per_class": {
+    "NON_OBJ": {
+      "precision": 0.7856,
+      "recall": 0.8896,
+      "f1-score": 0.8344,
+      "support": 589.0
+    },
+    "OBJ": {
+      "precision": 0.8449,
+      "recall": 0.7123,
+      "f1-score": 0.7729,
+      "support": 497.0
+    }
+  },
+  "macro_avg": {
+    "precision": 0.8152,
+    "recall": 0.801,
+    "f1-score": 0.8037,
+    "support": 1086.0
+  },
+  "weighted_avg": {
+    "precision": 0.8127,
+    "recall": 0.8085,
+    "f1-score": 0.8063,
+    "support": 1086.0
+  },
+  "final_epoch": {
+    "accuracy": 0.8332,
+    "loss": 0.3737,
+    "val_accuracy": 0.7984,
+    "val_loss": 0.4543
+  },
+  "settings": {
+    "seed": 42,
+    "img_size": [
+      224,
+      224
+    ],
+    "batch_size": 32,
+    "epochs_head": 20,
+    "epochs_fine": 10,
+    "lr_head": 0.001,
+    "lr_fine": 1e-05,
+    "unfreeze_last": 20,
+    "threshold": 0.5
+  },
+  "versions": {
+    "tensorflow": "2.21.0"
+  }
+}
