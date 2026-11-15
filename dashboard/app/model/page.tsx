@@ -269,7 +269,7 @@ export default function ModelPage() {
       </div>
 
       <footer className="border-t border-white/5 mt-10 py-6 text-center text-xs text-white/20">
-        AdEthics AI · MobileNetV2 + Grad-CAM + BLIP · Explainable AI for Gender Fairness
+        nazar · MobileNetV2 + Grad-CAM + BLIP · Explainable AI for Gender Fairness
       </footer>
     </main>
   );

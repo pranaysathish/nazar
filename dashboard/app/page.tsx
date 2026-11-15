@@ -117,7 +117,7 @@ export default function Home() {
       </div>
 
       <footer className="border-t border-white/5 mt-16 py-6 text-center text-xs text-white/20">
-        AdEthics AI &nbsp;·&nbsp; MobileNetV2 + Grad-CAM + BLIP &nbsp;·&nbsp; Dataset: {ORIGINAL.ads} ads, {ORIGINAL.frames.toLocaleString("en-US")} frames &nbsp;·&nbsp; Test accuracy {ORIGINAL.accuracy}% ({ORIGINAL.test} frames)
+        nazar &nbsp;·&nbsp; MobileNetV2 + Grad-CAM + BLIP &nbsp;·&nbsp; Dataset: {ORIGINAL.ads} ads, {ORIGINAL.frames.toLocaleString("en-US")} frames &nbsp;·&nbsp; Test accuracy {ORIGINAL.accuracy}% ({ORIGINAL.test} frames)
       </footer>
     </main>
   );

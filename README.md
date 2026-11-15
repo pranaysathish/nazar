@@ -1,13 +1,33 @@
-# Objectification Detector — Explainable AI
+<p align="center">
+  <img src="dashboard/app/icon.svg" width="72" alt="nazar logo">
+</p>
 
-An end-to-end deep learning system that detects objectification of women in video advertisements.
-A fine-tuned **MobileNetV2** scores each frame, **Grad-CAM** heat maps show which parts of a frame drove
-the score, and **BLIP** captions describe what is in the frame.
+<h1 align="center">nazar</h1>
+
+<p align="center">
+  <b>Explainable detection of objectification of women in video advertisements</b><br>
+  MobileNetV2 frame classifier · Grad-CAM heat maps · BLIP captions · Flask API · Next.js dashboard
+</p>
+
+*Nazar* is the Hindi and Urdu word for "gaze", and the name of the charm that wards off a harmful one.
+Give nazar a video ad (a file or a YouTube link): it scores 30 frames, decides whether the ad objectifies
+women, and shows **why**: which frames, which regions (Grad-CAM) and what is in them (BLIP captions).
 
 The deployed model reaches **85.68% test accuracy** on 922 held-out frames (`notebooks/Model_train.ipynb`).
 A reproducible re-run of the same design on all 110 ads gives the detailed evaluation: 80.85% frame accuracy,
 **90.9% of ads correct** and a **ROC-AUC of 0.89** (`notebooks/Objectification_Final_Train_Evaluate.ipynb`,
-`results/metrics.json`).
+`results/metrics.json`). In an additional test, CLIP image features raised the accuracy on the same test frames
+to **90.98%** (`experiments/clip_probe`).
+
+M.Tech. (Integrated) mini project, School of Computer Science and Engineering, VIT Chennai (November 2026).
+
+| Result for an advertisement | Top frames with Grad-CAM heat maps |
+|---|---|
+| ![Result](documents/screenshots/app_result.png) | ![Heat maps](documents/screenshots/app_heatmap.png) |
+
+| Home | Model info and metrics |
+|---|---|
+| ![Home](documents/screenshots/app_home.png) | ![Model info](documents/screenshots/app_model.png) |
 
 ---
 
@@ -44,7 +64,7 @@ These steps follow equations 1–13 of the paper.
 ├── models/                         # copy of the deployed model + the re-run model
 ├── results/                        # output of the re-run notebook: metrics.json, figures, split CSVs
 ├── demo_videos/                    # sample ads for the live demo (scores in demo_videos/README.md)
-├── documents/                      # final_review/ (report, slides), review2/, college_format/
+├── documents/                      # final_review/ (report, slides), screenshots/, review2/, college_format/
 ├── backend/
 │   ├── app.py              # Flask API server (port 5000)
 │   ├── predictor.py        # frames → MobileNetV2 → blur check → Grad-CAM → BLIP → verdict
@@ -88,12 +108,16 @@ The manual steps below do the same thing.
 ### 1. Get the code
 
 ```bash
-git clone -b final-review https://github.com/pranaysathish/woman-objectification-detector-dashboard.git
-cd woman-objectification-detector-dashboard
+git clone https://github.com/pranaysathish/nazar.git
+cd nazar
 ```
 
 The model file `objectification_model.h5` is part of the repository and stays in the main folder.
 Do not move it.
+
+Not in the repository: the frame datasets (`data/frames.zip`, `data/cleaned/frames_cleaned_auto.zip`,
+`data/objectifying ads frames.zip`) and the demo videos (`demo_videos/*.mp4`), because they are large and are
+copies of third-party advertisements. They are shared separately; any MP4 advertisement works for the demo.
 
 ### 2. Start the backend (terminal 1)
 

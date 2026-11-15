@@ -5,9 +5,9 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Objectification Detector — Explainable AI",
+  title: "nazar · Objectification Detector",
   description:
-    "Explainable AI system for detecting objectification in video advertisements using MobileNetV2 and BLIP.",
+    "nazar: explainable AI that detects objectification of women in video advertisements, with Grad-CAM heat maps and BLIP captions.",
 };
 
 export default function RootLayout({

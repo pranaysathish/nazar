@@ -1,4 +1,5 @@
 import Link from "next/link";
+import NazarMark from "@/components/NazarMark";
 import { ORIGINAL } from "@/lib/metrics";
 
 export default function Header() {
@@ -6,14 +7,13 @@ export default function Header() {
     <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black/90 backdrop-blur-md">
       <div className="max-w-6xl mx-auto px-6 h-[60px] flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-          <div className="w-8 h-8 rounded-lg bg-[#0f1f1e] border border-[#1e3835] flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3ecfbb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-          </div>
-          <span className="text-sm font-semibold tracking-tight text-white/70">
-            Objectification Detector
+          <NazarMark size={28} />
+          <span className="text-sm tracking-tight">
+            <span className="font-bold text-white">nazar</span>
+            <span className="hidden sm:inline">
+              <span className="text-white/25"> · </span>
+              <span className="font-semibold text-white/60">Objectification Detector</span>
+            </span>
           </span>
         </Link>
         <div className="flex items-center gap-2">
