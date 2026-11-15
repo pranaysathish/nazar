@@ -1,0 +1,41 @@
+{
+  "rules": {
+    "blank_std": 10.0,
+    "black_mean": 12,
+    "white_mean": 243,
+    "blur_lapvar": 0.0,
+    "person_score": 0.3,
+    "person_min_area": 0.015,
+    "dup_hamming": 5.0
+  },
+  "by_class": {
+    "OBJ": {
+      "frames_in": 3444,
+      "removed": {
+        "blank": 145,
+        "kept": 2483,
+        "duplicate": 330,
+        "no_person": 486
+      },
+      "frames_kept": 2483,
+      "ads_in": 55,
+      "ads_kept": 55,
+      "ads_dropped": []
+    },
+    "NON_OBJ": {
+      "frames_in": 4685,
+      "removed": {
+        "blank": 346,
+        "no_person": 740,
+        "kept": 2943,
+        "duplicate": 656
+      },
+      "frames_kept": 2943,
+      "ads_in": 55,
+      "ads_kept": 55,
+      "ads_dropped": []
+    }
+  },
+  "frames_in": 8129,
+  "frames_kept": 5426
+}

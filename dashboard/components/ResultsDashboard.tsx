@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AnalysisResult } from "@/app/page";
 import ScoreBreakdown from "@/components/ScoreBreakdown";
 
@@ -10,6 +10,11 @@ function getScoreColor(score: number) {
   if (score < 50) return "#f59e0b";
   if (score < 70) return "#f97316";
   return "#ef4444";
+}
+
+function fmtTime(sec: number) {
+  const s = Math.max(0, Math.round(sec));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
 function ScoreGauge({ score }: { score: number }) {
@@ -77,9 +82,22 @@ function ScoreGauge({ score }: { score: number }) {
 }
 
 export default function ResultsDashboard({ result, onReset }: Props) {
-  const { score, verdict, frames_analyzed, processing_time, top_frames, explanation } = result;
+  const {
+    score, verdict, confidence, frames_analyzed, frames_sharp, frames_above_threshold,
+    frame_scores, frame_sharp, processing_time, top_frames, explanation,
+  } = result;
+  const [view, setView] = useState<"frame" | "heatmap">("frame");
   const isObjectifying = verdict === "OBJECTIFYING";
   const verdictColor = isObjectifying ? "#ef4444" : "#22c55e";
+  const verdictLabel = isObjectifying ? "OBJECTIFYING" : "NOT OBJECTIFYING";
+  // Built from the backend's verdict, not the rounded score, so it never contradicts itself near 50%.
+  const verdictLine = isObjectifying
+    ? `The average score of ${score}% is at or above the 50% threshold.`
+    : frames_sharp === 0
+      ? "No frame passed the blur check, so the ad is not flagged."
+      : score >= 50
+        ? "The average score is just below the 50% threshold."
+        : `The average score of ${score}% is below the 50% threshold.`;
 
   return (
     <div className="flex flex-col gap-4">
@@ -98,22 +116,19 @@ export default function ResultsDashboard({ result, onReset }: Props) {
           <p className="text-[10px] font-bold tracking-widest uppercase text-white/25 mb-4">AI Verdict</p>
           <div>
             <div className="text-4xl mb-2">{isObjectifying ? "⚠️" : "✅"}</div>
-            <div className="text-[36px] font-extrabold tracking-tight leading-none mb-2" style={{ color: verdictColor }}>
-              {verdict}
+            <div className="text-[32px] sm:text-[36px] font-extrabold tracking-tight leading-none mb-2" style={{ color: verdictColor }}>
+              {verdictLabel}
             </div>
-            <p className="text-sm text-white/35">
-              {isObjectifying
-                ? `Score of ${score}% exceeds the 50% objectification threshold.`
-                : `Score of ${score}% is below the 50% threshold — content appears safe.`}
-            </p>
+            <p className="text-sm text-white/35">{verdictLine}</p>
           </div>
-          <div className="border-t border-white/[0.06] mt-6 pt-5 grid grid-cols-3 gap-4">
+          <div className="border-t border-white/[0.06] mt-6 pt-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { val: frames_analyzed, label: "Frames Analyzed" },
-              { val: `${processing_time}s`, label: "Processing Time" },
-              { val: "83.95%", label: "Model Accuracy" },
-            ].map(({ val, label }) => (
-              <div key={label} className="text-center">
+              { val: `${frames_analyzed}`, label: "Frames Analyzed", tip: "Evenly spaced frames sampled from the video" },
+              { val: `${frames_sharp}/${frames_analyzed}`, label: "Sharp Frames", tip: "Frames that passed the blur check (Laplacian variance > 100)" },
+              { val: `${confidence}%`, label: "Obj. Confidence", tip: "Objectification confidence (paper, eq. 7): average score × sharp frames ÷ 30. Low for ads that are not objectifying." },
+              { val: `${processing_time}s`, label: "Processing Time", tip: "Time taken by the backend" },
+            ].map(({ val, label, tip }) => (
+              <div key={label} className="text-center" title={tip}>
                 <div className="text-xl font-bold text-[#3ecfbb] tracking-tight">{val}</div>
                 <div className="text-[10px] text-white/25 tracking-wider uppercase mt-0.5">{label}</div>
               </div>
@@ -130,35 +145,60 @@ export default function ResultsDashboard({ result, onReset }: Props) {
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
-            BLIP Language Model
+            Grad-CAM + BLIP
           </span>
         </div>
         <p className="text-sm text-white/50 leading-relaxed">{explanation}</p>
       </div>
 
       {/* Score Breakdown */}
-      <ScoreBreakdown frames={top_frames} avgScore={score} />
+      <ScoreBreakdown
+        frameScores={frame_scores}
+        frameSharp={frame_sharp}
+        avgScore={score}
+        framesAboveThreshold={frames_above_threshold}
+        framesSharp={frames_sharp}
+      />
 
       {/* Top Frames */}
       <div className="bg-[#0a0a0a] border border-white/[0.07] rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-5">
-          <p className="text-[10px] font-bold tracking-widest uppercase text-white/25">Top Analyzed Frames</p>
-          <div className="flex items-center gap-4 text-[11px] text-white/25">
-            <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1.5" />Flagged</span>
-            <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1.5" />Safe</span>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div>
+            <p className="text-[10px] font-bold tracking-widest uppercase text-white/25">Top {top_frames.length} Frames</p>
+            <p className="text-xs text-white/30 mt-0.5">
+              {view === "heatmap"
+                ? "Grad-CAM heat maps: red areas pushed the frame's score towards objectifying"
+                : "The highest-scoring frames, with BLIP captions"}
+            </p>
+          </div>
+          <div className="flex items-center gap-1 bg-white/[0.04] border border-white/[0.07] p-1 rounded-xl" role="group" aria-label="Frame view">
+            {(["frame", "heatmap"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                aria-pressed={view === v}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  view === v ? "bg-[#111] text-white border border-white/10 shadow" : "text-white/30 hover:text-white/60"
+                }`}
+              >
+                {v === "frame" ? "Frames" : "Grad-CAM Heat Maps"}
+              </button>
+            ))}
           </div>
         </div>
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
           {top_frames.map((frame, i) => {
-            const scoreColor = frame.score >= 70 ? "#ef4444" : frame.score >= 40 ? "#f97316" : "#22c55e";
+            const scoreColor = getScoreColor(frame.score);
             return (
-              <div key={i} className="flex flex-col gap-2" style={{ animation: `fadeUp 0.4s ease ${i * 0.06}s both` }}>
+              <div key={frame.frame_index} className="flex flex-col gap-2" style={{ animation: `fadeUp 0.4s ease ${i * 0.06}s both` }}>
                 <div className="relative rounded-xl overflow-hidden aspect-video border border-white/[0.07] bg-black">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`data:image/png;base64,${frame.image_b64}`}
-                    alt={`Frame ${i + 1}`}
-                    className="w-full h-full object-cover"
+                    src={`data:image/jpeg;base64,${view === "heatmap" ? frame.heatmap_b64 : frame.image_b64}`}
+                    alt={`${view === "heatmap" ? "Grad-CAM heat map of frame" : "Frame"} at ${fmtTime(frame.time_sec)}: ${frame.caption}`}
+                    className="w-full h-full object-contain"
                   />
                   <span
                     className="absolute top-1.5 right-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
@@ -166,13 +206,33 @@ export default function ResultsDashboard({ result, onReset }: Props) {
                   >
                     {frame.score}%
                   </span>
-                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: frame.flagged ? "#ef4444" : "#22c55e" }} />
+                  <span className="absolute bottom-1.5 left-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-black/65 text-white/80">
+                    {fmtTime(frame.time_sec)}
+                  </span>
+                  {!frame.sharp && (
+                    <span className="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/65 text-amber-300">
+                      BLURRY
+                    </span>
+                  )}
                 </div>
-                <p className="text-[11px] text-white/35 leading-snug line-clamp-2">{frame.caption}</p>
+                <p className="text-[11px] text-white/45 leading-snug line-clamp-2">{frame.caption}</p>
+                {frame.keywords.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {frame.keywords.map((k) => (
+                      <span key={k} className="text-[9px] font-bold bg-red-950/60 text-red-400 border border-red-800/30 px-1.5 py-0.5 rounded-full">
+                        {k}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
+        <p className="text-[11px] text-white/25 mt-4">
+          Red tags are objectification keywords found in a frame&apos;s caption (from a list of 17).
+          Time stamps show where each frame is in the video.
+        </p>
       </div>
 
       {/* Reset button */}

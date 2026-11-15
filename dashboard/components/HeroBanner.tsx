@@ -22,8 +22,8 @@ export default function HeroBanner() {
             <span className="text-[#3ecfbb]">in Video Advertisements</span>
           </h1>
           <p className="max-w-lg text-[15px] text-white/45 leading-relaxed">
-            Upload a video ad or paste a YouTube link. Our deep learning model analyzes
-            every frame, scores objectification, and explains its reasoning in plain language.
+            Upload a video ad or paste a YouTube link. The model samples 30 frames across the
+            video, scores each one, and explains the result with Grad-CAM heat maps and BLIP captions.
           </p>
         </div>
       </div>

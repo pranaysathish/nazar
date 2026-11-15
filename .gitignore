@@ -9,3 +9,11 @@ dashboard/.next/
 
 # Misc
 *.tmp
+
+# Large or third-party files, shared via Google Drive instead of GitHub
+data/frames.zip
+data/cleaned/frames_cleaned_auto.zip
+data/objectifying ads frames.zip
+demo_videos/**/*.mp4
+results/final_results.zip
+results/*.keras

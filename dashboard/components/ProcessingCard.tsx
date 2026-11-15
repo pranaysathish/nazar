@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 const steps = [
   "Extracting video frames",
   "Running MobileNetV2 classifier",
+  "Computing Grad-CAM heat maps",
   "Generating BLIP captions",
   "Building explanation",
 ];
@@ -12,7 +13,7 @@ export default function ProcessingCard() {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
-    const t = setInterval(() => setCurrent((c) => Math.min(c + 1, steps.length - 1)), 6000);
+    const t = setInterval(() => setCurrent((c) => Math.min(c + 1, steps.length - 1)), 2500);
     return () => clearInterval(t);
   }, []);
 
@@ -37,7 +38,7 @@ export default function ProcessingCard() {
           ))}
         </div>
 
-        <p className="text-xs text-white/20 text-center">This may take 15–60 seconds</p>
+        <p className="text-xs text-white/20 text-center">Usually 10–30 seconds (YouTube links take a little longer)</p>
       </div>
     </div>
   );
