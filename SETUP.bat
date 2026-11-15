@@ -1,14 +1,14 @@
 @echo off
 rem ============================================================================
-rem  One-time setup for the Objectification Detector demo (Windows 10/11).
-rem  Needs INTERNET and about 6 GB of free disk space. Takes 15-30 minutes.
+rem  One-time setup for the nazar / Objectification Detector demo (Windows 10/11).
+rem  Needs INTERNET and about 6 GB of free disk space. Takes 15-40 minutes.
 rem  Before running: install Python 3.13 (64-bit, python.org) and Node.js LTS (nodejs.org).
 rem ============================================================================
 cd /d "%~dp0"
 title Objectification Detector - setup
 
 echo.
-echo [1/4] Checking Python 3.13 ...
+echo [1/5] Checking Python 3.13 ...
 py -3.13 --version
 if errorlevel 1 (
   echo.
@@ -19,7 +19,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo [2/4] Checking Node.js ...
+echo [2/5] Checking Node.js ...
 where npm >nul 2>nul
 if errorlevel 1 (
   echo.
@@ -30,7 +30,7 @@ if errorlevel 1 (
 call node --version
 
 echo.
-echo [3/4] Installing Python packages (TensorFlow, PyTorch, Transformers ...). This takes 5-15 minutes.
+echo [3/5] Installing Python packages (TensorFlow, PyTorch, Transformers ...). This takes 5-20 minutes.
 py -3.13 -m pip install --disable-pip-version-check -r backend\requirements.txt
 if errorlevel 1 (
   echo.
@@ -40,7 +40,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo [4/4] Installing the website packages and downloading the BLIP captioning model (about 1 GB) ...
+echo [4/5] Installing and building the website (2-5 minutes) ...
 pushd dashboard
 call npm install --no-audit --no-fund
 if errorlevel 1 (
@@ -50,7 +50,18 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+call npm run build
+if errorlevel 1 (
+  popd
+  echo.
+  echo Website build failed. Run SETUP.bat again. If it fails again, send a photo of this window.
+  pause
+  exit /b 1
+)
 popd
+
+echo.
+echo [5/5] Downloading the BLIP captioning model (about 1 GB, one time only) ...
 py -3.13 -c "from transformers import BlipProcessor, BlipForConditionalGeneration as B; n='Salesforce/blip-image-captioning-base'; BlipProcessor.from_pretrained(n); B.from_pretrained(n); print('BLIP model ready')"
 if errorlevel 1 (
   echo.
